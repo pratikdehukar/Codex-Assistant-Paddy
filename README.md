@@ -16,10 +16,9 @@ npm run dev
 ```
 
 ## Voice UX
-1. Enable **Wake Mode**.
-2. Say **"Hey Paddy"**.
-3. Speak your task command.
-4. Task is parsed and added, with optional speech feedback.
+1. Tap anywhere once (or tap mic) to grant voice permission in-browser.
+2. Say **"Hey Paddy buy milk tomorrow"** for one-shot capture, or say **"Hey Paddy"** and then your task.
+3. The app parses and saves the task, then returns to standby listening mode.
 
 ## Architecture
 - `src/components`: UI components (`TaskInput`, `VoiceRecorder`, `TaskList`)

@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { parseTaskInput } from '../services/nlpService';
 import { useSpeechRecognition } from '../services/speechService';
 import { speakFeedback } from '../services/ttsService';
 
-const WAKE_WORD = 'hey paddy';
+const WAKE_WORD_REGEX = /hey\s+paddy/i;
 
 export default function VoiceRecorder({ onAddTask }) {
   const [transcript, setTranscript] = useState('');
-  const [wakeArmed, setWakeArmed] = useState(false);
-  const [wakeDetected, setWakeDetected] = useState(false);
+  const [mode, setMode] = useState('waiting');
 
   const {
     isListening,
@@ -17,86 +16,75 @@ export default function VoiceRecorder({ onAddTask }) {
     stop,
     reset,
   } = useSpeechRecognition({
+    autoRestart: true,
     onResult: (value) => setTranscript(value),
-    onInterimResult: (value) => {
-      if (wakeArmed && !wakeDetected && value.toLowerCase().includes(WAKE_WORD)) {
-        setWakeDetected(true);
-        setTranscript('Wake word detected. Listening for your task…');
-      }
-    },
     onFinalResult: (value) => {
-      const normalized = value.toLowerCase().trim();
+      const spoken = value.trim();
+      if (!spoken) return;
 
-      if (wakeArmed && !wakeDetected) {
-        if (normalized.includes(WAKE_WORD)) {
-          setWakeDetected(true);
-          setTranscript('Wake word detected. Tell me your task now.');
-        }
+      if (mode === 'task') {
+        const parsed = parseTaskInput(spoken);
+        onAddTask(parsed);
+        speakFeedback(`Added task: ${parsed.title}`);
+        setTranscript(`Saved: ${parsed.title}`);
+        setMode('waiting');
         return;
       }
 
-      const commandText = wakeArmed
-        ? value.replace(/hey\s+paddy/gi, '').trim()
-        : value.trim();
-
-      if (!commandText) {
+      const wakeMatch = spoken.match(WAKE_WORD_REGEX);
+      if (!wakeMatch) {
         return;
       }
 
-      const parsed = parseTaskInput(commandText);
-      onAddTask(parsed);
-      speakFeedback(`Added task: ${parsed.title}`);
-      setTranscript('Task captured successfully.');
-      if (wakeArmed) {
-        setWakeDetected(false);
+      const remainder = spoken.slice((wakeMatch.index ?? 0) + wakeMatch[0].length).trim();
+      if (remainder) {
+        const parsed = parseTaskInput(remainder);
+        onAddTask(parsed);
+        speakFeedback(`Added task: ${parsed.title}`);
+        setTranscript(`Saved: ${parsed.title}`);
+        setMode('waiting');
+        return;
       }
+
+      setMode('task');
+      setTranscript('Listening for your task...');
+      speakFeedback('I am listening. Please say your task.');
     },
-    onError: () => {
-      setTranscript('Unable to recognize speech, please try again.');
-      setWakeDetected(false);
-    },
+    onError: () => setTranscript('Voice error. Tap mic once to re-enable listening.'),
   });
 
-  const microphoneLabel = useMemo(() => {
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const bootListener = () => {
+      start();
+      window.removeEventListener('pointerdown', bootListener);
+    };
+
+    window.addEventListener('pointerdown', bootListener);
+    return () => window.removeEventListener('pointerdown', bootListener);
+  }, [isSupported, start]);
+
+  const statusLabel = useMemo(() => {
     if (!isSupported) return 'Voice not supported';
-    if (wakeArmed) return isListening ? 'Disable wake mode' : 'Enable wake mode';
-    return isListening ? 'Stop listening' : 'Start voice input';
-  }, [isListening, isSupported, wakeArmed]);
-
-  const handleMicPress = () => {
-    if (isListening) {
-      stop();
-      if (!wakeArmed) {
-        setWakeDetected(false);
-      }
-      return;
-    }
-
-    start();
-  };
-
-  const toggleWakeMode = () => {
-    setWakeArmed((current) => {
-      const next = !current;
-      setWakeDetected(false);
-      setTranscript(next ? 'Wake mode armed. Say “Hey Paddy” to start.' : 'Wake mode off.');
-      return next;
-    });
-  };
+    if (!isListening) return 'Tap mic to enable background listening';
+    if (mode === 'task') return 'Task mode: say the new task now';
+    return 'Standby: say “Hey Paddy”';
+  }, [isListening, isSupported, mode]);
 
   return (
     <div className="voice-recorder glass-panel">
-      <div className={`wake-indicator ${wakeDetected ? 'detected' : ''}`}>
-        <span className="ai-avatar" aria-hidden="true">✦</span>
+      <div className="wake-indicator">
+        <span className={`ai-avatar ${mode === 'task' ? 'active' : ''}`} aria-hidden="true">✦</span>
         <p>
-          <strong>Wake word:</strong> “Hey Paddy”
+          <strong>Hands-free mode</strong>
           <br />
-          <span>{wakeArmed ? 'Armed and waiting' : 'Press Wake Mode to arm'}</span>
+          <span>{statusLabel}</span>
         </p>
       </div>
 
       <div className="transcription-float" aria-live="polite">
-        {transcript || 'Live transcription appears here once listening starts…'}
+        {transcript || 'Say “Hey Paddy buy milk tomorrow” to add instantly.'}
       </div>
 
       <div className="waveform" aria-hidden="true">
@@ -108,16 +96,12 @@ export default function VoiceRecorder({ onAddTask }) {
       <div className="voice-actions">
         <button
           type="button"
-          className={`mic-button ${isListening ? 'listening' : ''} ${wakeDetected ? 'detected' : ''}`}
-          onClick={handleMicPress}
+          className={`mic-button ${isListening ? 'listening' : ''} ${mode === 'task' ? 'detected' : ''}`}
+          onClick={isListening ? stop : start}
           disabled={!isSupported}
-          aria-label={microphoneLabel}
+          aria-label="Voice control"
         >
           🎤
-        </button>
-
-        <button type="button" className="ghost-btn" onClick={toggleWakeMode}>
-          {wakeArmed ? 'Wake Mode On' : 'Wake Mode Off'}
         </button>
 
         <button type="button" className="ghost-btn" onClick={reset} disabled={!transcript}>
