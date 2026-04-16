@@ -25,19 +25,20 @@ export default function TaskList({ tasks, onToggle, onDelete, onUpdate }) {
   return (
     <ul className="task-list">
       {tasks.map((task) => (
-        <li key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-          <label>
+        <li key={task.id} className={`task-item glass-panel ${task.completed ? 'completed' : ''}`}>
+          <label className="task-state">
             <input
               type="checkbox"
               checked={task.completed}
               onChange={() => onToggle(task.id)}
             />
-            <span className="status">{task.completed ? 'Completed' : 'Pending'}</span>
+            <span className="status-pill">{task.completed ? 'Completed' : 'Pending'}</span>
           </label>
 
           <div className="task-main">
             {editingId === task.id ? (
               <input
+                className="edit-input"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 onBlur={() => saveEdit(task.id)}
@@ -58,8 +59,8 @@ export default function TaskList({ tasks, onToggle, onDelete, onUpdate }) {
           </div>
 
           <div className="task-actions">
-            <button type="button" onClick={() => beginEdit(task)}>Edit</button>
-            <button type="button" onClick={() => onDelete(task.id)}>Delete</button>
+            <button type="button" className="ghost-btn" onClick={() => beginEdit(task)}>Edit</button>
+            <button type="button" className="ghost-btn danger" onClick={() => onDelete(task.id)}>Delete</button>
           </div>
         </li>
       ))}

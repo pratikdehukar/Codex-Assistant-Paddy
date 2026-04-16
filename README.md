@@ -1,13 +1,13 @@
-# Smart Voice Todo PWA
+# Paddy AI Tasks PWA
 
-A mobile-first progressive web app that works as a voice-enabled todo manager.
+A futuristic, mobile-first progressive web app with voice-first task capture.
 
 ## Features
-- Voice input using the Web Speech API with live transcription.
-- Manual text input with simple NLP parsing for title, date/time, and priority.
-- Edit, delete, complete, and filter tasks.
-- Offline-ready PWA with service worker caching and manifest.
-- Local persistence through `localStorage`.
+- Wake-word flow (`Hey Paddy`) for hands-free voice activation.
+- Live transcription in a floating glassmorphism panel.
+- Manual task input with basic natural-language parsing (title/date/priority/category).
+- Task list with edit, delete, completion state, and status filtering.
+- Installable PWA with offline service worker shell caching.
 
 ## Quick Start
 ```bash
@@ -15,16 +15,14 @@ npm install
 npm run dev
 ```
 
+## Voice UX
+1. Enable **Wake Mode**.
+2. Say **"Hey Paddy"**.
+3. Speak your task command.
+4. Task is parsed and added, with optional speech feedback.
+
 ## Architecture
-- `src/components`: UI widgets (`TaskInput`, `VoiceRecorder`, `TaskList`)
-- `src/services`: speech, NLP parsing, task state, local storage, TTS
+- `src/components`: UI components (`TaskInput`, `VoiceRecorder`, `TaskList`)
+- `src/services`: voice recognition, NLP parser, storage/task services, TTS
 - `public/sw.js`: service worker for offline support
-- `public/manifest.webmanifest`: installable PWA metadata
-
-## Example Parsing
-Input: `Call John at 5 PM urgent`
-
-Parsed output:
-- Title: `Call John`
-- Due Date/Time: today at 5:00 PM
-- Priority: `high`
+- `public/manifest.webmanifest`: installable metadata

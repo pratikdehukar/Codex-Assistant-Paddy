@@ -19,7 +19,7 @@ export default function TaskInput({ onAddTask }) {
         placeholder="Type a task, e.g., Call John at 5 PM"
         aria-label="Manual task input"
       />
-      <button type="submit">Add</button>
+      <button type="submit" className="gradient-btn">Add Task</button>
     </form>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export function useSpeechRecognition({ onResult, onFinalResult, onError }) {
+export function useSpeechRecognition({ onResult, onInterimResult, onFinalResult, onError }) {
   const recognitionRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
 
@@ -28,7 +28,13 @@ export function useSpeechRecognition({ onResult, onFinalResult, onError }) {
         }
       }
 
-      onResult(`${final} ${interim}`.trim());
+      const combined = `${final} ${interim}`.trim();
+      onResult(combined);
+
+      if (interim.trim()) {
+        onInterimResult?.(interim.trim());
+      }
+
       if (final.trim()) {
         onFinalResult(final.trim());
       }
@@ -43,7 +49,7 @@ export function useSpeechRecognition({ onResult, onFinalResult, onError }) {
     recognitionRef.current = recognition;
 
     return () => recognition.stop();
-  }, [SpeechRecognition, onError, onFinalResult, onResult]);
+  }, [SpeechRecognition, onError, onFinalResult, onInterimResult, onResult]);
 
   const start = () => {
     if (!recognitionRef.current) return;
